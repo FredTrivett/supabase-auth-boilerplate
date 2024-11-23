@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) app that i am in the process of finishing up, it's mainly for my Growvy.app project that is a side project i am working on. It's aim is to become like duolingo but for learning business.
+
+This Boilerplate is created by Fred Trivett.
 
 ## Getting Started
 
