@@ -212,8 +212,8 @@ export async function verifyCode(formData: FormData) {
     }
   }
 
-  // Redirect to dashboard after successful verification
-  redirect('/dashboard')
+  // Redirect to onboarding after successful verification
+  redirect('/onboarding')
 }
 
 export async function resendCode(email: string) {
@@ -367,5 +367,36 @@ export async function updateEmail(formData: FormData) {
     }
   }
 
+  return { success: true }
+}
+
+export async function completeOnboarding(formData: FormData): Promise<ActionResponse> {
+  const supabase = await createClient()
+
+  const firstName = formData.get('firstName') as string
+  const lastName = formData.get('lastName') as string
+
+  if (!firstName || !lastName) {
+    return {
+      error: 'Both first and last name are required'
+    }
+  }
+
+  // Update user metadata to include name and onboarding status
+  const { error: updateError } = await supabase.auth.updateUser({
+    data: {
+      first_name: firstName,
+      last_name: lastName,
+      onboarding_completed: true
+    }
+  })
+
+  if (updateError) {
+    return {
+      error: updateError.message
+    }
+  }
+
+  revalidatePath('/', 'layout')
   return { success: true }
 }
