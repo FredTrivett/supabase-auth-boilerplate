@@ -373,20 +373,42 @@ export async function updateEmail(formData: FormData) {
 export async function completeOnboarding(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient()
 
-  const firstName = formData.get('firstName') as string
-  const lastName = formData.get('lastName') as string
+  const name = formData.get('name') as string
+  const role = formData.get('role') as string
 
-  if (!firstName || !lastName) {
+  if (!name || !role) {
     return {
-      error: 'Both first and last name are required'
+      error: 'Name and role are required'
     }
   }
 
-  // Update user metadata to include name and onboarding status
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return {
+      error: 'Authentication error'
+    }
+  }
+
+  // Insert/update profile
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      name,
+      role,
+    })
+
+  if (profileError) {
+    return {
+      error: profileError.message
+    }
+  }
+
+  // Update user metadata to mark onboarding as complete
   const { error: updateError } = await supabase.auth.updateUser({
     data: {
-      first_name: firstName,
-      last_name: lastName,
       onboarding_completed: true
     }
   })
