@@ -31,24 +31,17 @@ export default async function SettingsPage() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Your Profile</CardTitle>
-                    <CardDescription>
-                        View and manage your account information
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium">Name</p>
-                        <p className="text-sm text-muted-foreground">{profile.name}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium">Email</p>
-                        <p className="text-sm text-muted-foreground">{profile.email}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium">Role</p>
-                        <p className="text-sm text-muted-foreground capitalize">{profile.role.replace(/_/g, ' ')}</p>
+                <CardContent className="pt-6">
+                    <div className="grid gap-6">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium leading-none">{profile.name}</p>
+                                <p className="text-sm text-muted-foreground">{profile.email}</p>
+                            </div>
+                            <div className="text-sm text-muted-foreground bg-muted px-2.5 py-0.5 rounded-md">
+                                {profile.role.replace(/_/g, ' ')}
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
