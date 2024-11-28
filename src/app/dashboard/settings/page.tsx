@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { createClient } from '@/utils/supabase/server'
+import { cn } from "@/lib/utils"
 
 async function getProfile() {
     const supabase = await createClient()
@@ -47,37 +48,43 @@ export default async function SettingsPage() {
             </Card>
 
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Edit Profile</CardTitle>
-                        <CardDescription>
-                            Update your name and role
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button variant="link" asChild>
-                            <Link className="pl-0" href="/dashboard/settings/profile">
+                <Link href="/dashboard/settings/profile" className="block group h-full">
+                    <Card className="h-full">
+                        <CardHeader>
+                            <CardTitle>Edit Profile</CardTitle>
+                            <CardDescription>
+                                Update your name and role
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <span className={cn(
+                                "text-sm font-medium text-primary",
+                                "group-hover:underline"
+                            )}>
                                 Edit Profile →
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
+                            </span>
+                        </CardContent>
+                    </Card>
+                </Link>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Security Settings</CardTitle>
-                        <CardDescription>
-                            Manage your email, password and account security
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button variant="link" asChild>
-                            <Link className="pl-0" href="/dashboard/settings/account">
+                <Link href="/dashboard/settings/account" className="block group h-full">
+                    <Card className="h-full">
+                        <CardHeader>
+                            <CardTitle>Security Settings</CardTitle>
+                            <CardDescription>
+                                Manage your email, password and account security
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <span className={cn(
+                                "text-sm font-medium text-primary",
+                                "group-hover:underline"
+                            )}>
                                 Manage Security →
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
+                            </span>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
         </div>
     )
