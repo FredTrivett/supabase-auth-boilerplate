@@ -3,25 +3,29 @@ import { createClient } from '@/utils/supabase/server'
 async function getProfile() {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) return null
+        if (!user) return null
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('name, first_login')
-        .eq('id', user.id)
-        .single()
-
-    if (profile?.first_login) {
-        // Update first_login to false after fetching
-        await supabase
+        const { data: profile } = await supabase
             .from('profiles')
-            .update({ first_login: false })
+            .select('name, first_login')
             .eq('id', user.id)
-    }
+            .single()
 
-    return profile
+        if (profile?.first_login) {
+            await supabase
+                .from('profiles')
+                .update({ first_login: false })
+                .eq('id', user.id)
+        }
+
+        return profile
+    } catch (error) {
+        console.error('Error fetching profile:', error)
+        return null
+    }
 }
 
 export default async function DashboardPage() {

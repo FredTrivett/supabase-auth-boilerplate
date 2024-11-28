@@ -1,12 +1,16 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+let cachedClient: any = null;
+
 export async function createClient(useAdmin: boolean = false) {
+  if (cachedClient) return cachedClient;
+
   const authKey = useAdmin
     ? process.env.SUPABASE_SERVICE_ROLE_KEY
     : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  return createServerClient(
+  cachedClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     authKey!,
     {
@@ -20,9 +24,7 @@ export async function createClient(useAdmin: boolean = false) {
             const cookieStore = await cookies()
             cookieStore.set(name, value, options)
           } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Cookie errors can be ignored in middleware
           }
         },
         async remove(name: string, options: CookieOptions) {
@@ -30,12 +32,12 @@ export async function createClient(useAdmin: boolean = false) {
             const cookieStore = await cookies()
             cookieStore.set(name, '', { ...options, maxAge: 0 })
           } catch (error) {
-            // The `remove` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Cookie errors can be ignored in middleware
           }
         },
       },
     }
   )
+
+  return cachedClient
 }
