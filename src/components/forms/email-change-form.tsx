@@ -111,8 +111,8 @@ export function EmailChangeForm({ email: initialEmail }: EmailChangeFormProps) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+        <div className="p-4 bg-muted/40 rounded-lg space-y-4">
+            <div className="flex items-center justify-between">
                 <div>
                     <p className="text-sm font-medium">Current Email</p>
                     <p className="text-sm text-muted-foreground">{currentEmail}</p>
@@ -126,7 +126,7 @@ export function EmailChangeForm({ email: initialEmail }: EmailChangeFormProps) {
             </div>
 
             {showForm && (
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="space-y-4">
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email">New Email Address</Label>

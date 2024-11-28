@@ -253,46 +253,58 @@ export async function resendCode(email: string) {
   }
 }
 
-export async function updatePassword(formData: FormData, code: string) {
+export async function updatePassword(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient()
 
-  const password = formData.get('password') as string
+  const currentPassword = formData.get('currentPassword') as string
+  const newPassword = formData.get('newPassword') as string
   const confirmPassword = formData.get('confirmPassword') as string
 
-  if (password !== confirmPassword) {
+  if (!currentPassword || !newPassword || !confirmPassword) {
     return {
-      error: 'Passwords do not match'
+      error: 'All fields are required'
     }
   }
 
-  try {
-    // Exchange the recovery code for a session
-    const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
-
-    if (sessionError) {
-      return {
-        error: 'Invalid or expired reset link. Please request a new one.'
-      }
-    }
-
-    // Update the user's password
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: password
-    })
-
-    if (updateError) {
-      return {
-        error: updateError.message
-      }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error('Password reset error:', error)
+  if (newPassword !== confirmPassword) {
     return {
-      error: 'An error occurred while resetting your password. Please try again.'
+      error: 'New passwords do not match'
     }
   }
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user?.email) {
+    return {
+      error: 'Authentication error'
+    }
+  }
+
+  // First verify the current password
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+
+  if (signInError) {
+    return {
+      error: 'Current password is incorrect'
+    }
+  }
+
+  // Update the password
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword
+  })
+
+  if (updateError) {
+    return {
+      error: updateError.message
+    }
+  }
+
+  return { success: true }
 }
 
 export async function resetPassword(formData: FormData) {

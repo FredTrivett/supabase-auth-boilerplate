@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { createClient } from '@/utils/supabase/server'
 import { cn } from "@/lib/utils"
+import { signOut } from "@/app/(auth)/actions"
 
 async function getProfile() {
     const supabase = await createClient()
@@ -30,22 +31,27 @@ export default async function SettingsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <Card>
-                <CardContent className="pt-6">
-                    <div className="grid gap-6">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium leading-none">{profile.name}</p>
-                                <p className="text-sm text-muted-foreground">{profile.email}</p>
-                            </div>
-                            <div className="text-sm text-muted-foreground bg-muted px-2.5 py-0.5 rounded-md">
-                                {profile.role.replace(/_/g, ' ')}
-                            </div>
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-x-2">
+                        <p className="text-sm font-medium leading-none">{profile.name}</p>
+                        <div className="text-xs text-muted-foreground bg-muted px-2.5 py-0.5 rounded-md">
+                            {profile.role.replace(/_/g, ' ')}
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                    <p className="text-sm text-muted-foreground">{profile.email}</p>
+                </div>
+                <form action={signOut}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive"
+                    >
+                        Sign out
+                    </Button>
+                </form>
+            </div>
 
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                 <Link href="/dashboard/settings/profile" className="block group h-full">

@@ -14,13 +14,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
 
 const roles = [
     { value: 'student', label: 'Student' },
@@ -67,57 +60,49 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>
-                    Update your profile information
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form action={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                            id="name"
-                            name="name"
-                            defaultValue={initialData.name}
-                            placeholder="Your name"
-                        />
-                    </div>
+        <div className="space-y-4">
+            <form action={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                        id="name"
+                        name="name"
+                        defaultValue={initialData.name}
+                        placeholder="Your name"
+                    />
+                </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="role">Role</Label>
-                        <Select
-                            value={selectedRole}
-                            onValueChange={setSelectedRole}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select your role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {roles.map((role) => (
-                                    <SelectItem
-                                        key={role.value}
-                                        value={role.value}
-                                    >
-                                        {role.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select
+                        value={selectedRole}
+                        onValueChange={setSelectedRole}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {roles.map((role) => (
+                                <SelectItem
+                                    key={role.value}
+                                    value={role.value}
+                                >
+                                    {role.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-                    <div className="flex justify-end">
-                        <Button
-                            type="submit"
-                            disabled={loading}
-                        >
-                            {loading ? "Saving..." : "Save changes"}
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
+                <div className="flex justify-end">
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                    >
+                        {loading ? "Saving..." : "Save changes"}
+                    </Button>
+                </div>
+            </form>
+        </div>
     )
 } 

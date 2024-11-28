@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { EmailChangeForm } from "@/components/forms/email-change-form"
 import { createClient } from '@/utils/supabase/server'
-import { signOut } from "@/app/(auth)/actions"
 import { unstable_noStore as noStore } from 'next/cache'
+import { PasswordChangeForm } from "@/components/forms/password-change-form"
 
 async function getUser() {
     noStore()
@@ -26,66 +26,48 @@ export default async function AccountSettingsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-lg font-medium">Account Security</h3>
-                <p className="text-sm text-muted-foreground">
-                    Manage your account security settings.
-                </p>
+        <div className="space-y-8">
+            {/* Email Section */}
+            <div className="space-y-4">
+                <div>
+                    <h3 className="text-lg font-medium">Email Address</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Update your email address
+                    </p>
+                </div>
+                <EmailChangeForm email={user.email || ''} />
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Email Address</CardTitle>
-                    <CardDescription>
-                        Update your email address
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <EmailChangeForm email={user.email || ''} />
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Password & Authentication</CardTitle>
-                    <CardDescription>
+            {/* Password Section */}
+            <div className="space-y-4">
+                <div>
+                    <h3 className="text-lg font-medium">Password & Authentication</h3>
+                    <p className="text-sm text-muted-foreground">
                         Update your password and security preferences
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {/* Password Change Form - To be implemented */}
-                    <form className="space-y-4">
-                        {/* Password fields */}
-                    </form>
+                    </p>
+                </div>
+                <div className="p-4 bg-muted/40 rounded-lg">
+                    <PasswordChangeForm />
+                </div>
+            </div>
 
-                    <Separator />
-
-                    {/* Account Deletion */}
-                    <div className="space-y-4">
-                        <div>
-                            <h4 className="text-sm font-medium">Danger Zone</h4>
-                            <p className="text-sm text-muted-foreground">
-                                Permanent actions to your account
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-4">
-                            <form action={signOut}>
-                                <Button
-                                    variant="outline"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                    Sign out
-                                </Button>
-                            </form>
-                            <Button variant="destructive" className="w-fit">
-                                Delete Account
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Danger Zone */}
+            <div className="space-y-4 pt-4">
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Danger Zone</h3>
+                    <p className="text-sm text-muted-foreground/60">
+                        Permanent actions to your account
+                    </p>
+                </div>
+                <div className="p-4 border border-muted rounded-lg">
+                    <Button
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                        Delete Account
+                    </Button>
+                </div>
+            </div>
         </div>
     )
 } 
