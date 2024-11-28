@@ -17,6 +17,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { ArrowRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface EmailChangeFormProps {
     email: string
@@ -29,9 +30,15 @@ export function EmailChangeForm({ email: initialEmail }: EmailChangeFormProps) {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [currentEmail, setCurrentEmail] = useState(initialEmail)
     const [isCheckingEmail, setIsCheckingEmail] = useState(false)
+    const [hasChanges, setHasChanges] = useState(false)
     const router = useRouter()
     const { toast } = useToast()
     const supabase = createClient()
+
+    // Check for changes
+    useEffect(() => {
+        setHasChanges(newEmail !== '' && newEmail !== currentEmail)
+    }, [newEmail, currentEmail])
 
     // Function to check for email updates
     const checkEmailUpdate = useCallback(async () => {
@@ -110,6 +117,11 @@ export function EmailChangeForm({ email: initialEmail }: EmailChangeFormProps) {
         setLoading(false)
     }
 
+    function handleCancel() {
+        setNewEmail('')
+        setShowForm(false)
+    }
+
     return (
         <div className="p-4 bg-muted/40 rounded-lg space-y-4">
             <div className="flex items-center justify-between">
@@ -140,10 +152,24 @@ export function EmailChangeForm({ email: initialEmail }: EmailChangeFormProps) {
                             />
                         </div>
 
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-4">
+                            {hasChanges && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleCancel}
+                                    disabled={loading}
+                                >
+                                    Cancel
+                                </Button>
+                            )}
                             <Button
                                 type="submit"
-                                disabled={loading}
+                                disabled={loading || !hasChanges}
+                                className={cn(
+                                    !hasChanges && "opacity-50",
+                                    "transition-opacity"
+                                )}
                             >
                                 {loading ? "Updating..." : "Update Email"}
                             </Button>

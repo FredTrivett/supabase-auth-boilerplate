@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateProfile } from '@/app/(auth)/actions'
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 const roles = [
     { value: 'student', label: 'Student' },
@@ -34,12 +35,27 @@ interface ProfileFormProps {
 export function ProfileForm({ initialData }: ProfileFormProps) {
     const [loading, setLoading] = useState(false)
     const [selectedRole, setSelectedRole] = useState(initialData.role)
+    const [name, setName] = useState(initialData.name)
+    const [hasChanges, setHasChanges] = useState(false)
     const router = useRouter()
     const { toast } = useToast()
+
+    useEffect(() => {
+        const hasFormChanges =
+            name !== initialData.name ||
+            selectedRole !== initialData.role
+        setHasChanges(hasFormChanges)
+    }, [name, selectedRole, initialData])
+
+    function handleCancel() {
+        setSelectedRole(initialData.role)
+        setName(initialData.name)
+    }
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
         formData.set('role', selectedRole)
+        formData.set('name', name)
 
         const result = await updateProfile(formData)
 
@@ -67,7 +83,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                     <Input
                         id="name"
                         name="name"
-                        defaultValue={initialData.name}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder="Your name"
                     />
                 </div>
@@ -94,10 +111,24 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                     </Select>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-4">
+                    {hasChanges && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancel}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </Button>
+                    )}
                     <Button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !hasChanges}
+                        className={cn(
+                            !hasChanges && "opacity-50",
+                            "transition-opacity"
+                        )}
                     >
                         {loading ? "Saving..." : "Save changes"}
                     </Button>

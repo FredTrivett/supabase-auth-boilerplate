@@ -8,12 +8,33 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { PasswordInput } from "@/components/ui/password-input"
+import { cn } from "@/lib/utils"
 
 export function PasswordChangeForm() {
     const [loading, setLoading] = useState(false)
     const [showForm, setShowForm] = useState(false)
+    const [currentPassword, setCurrentPassword] = useState('')
+    const [newPassword, setNewPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
+    const [hasChanges, setHasChanges] = useState(false)
     const router = useRouter()
     const { toast } = useToast()
+
+    // Check for changes
+    useEffect(() => {
+        setHasChanges(
+            currentPassword !== '' &&
+            newPassword !== '' &&
+            confirmPassword !== ''
+        )
+    }, [currentPassword, newPassword, confirmPassword])
+
+    function handleCancel() {
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+        setShowForm(false)
+    }
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
@@ -82,6 +103,8 @@ export function PasswordChangeForm() {
                             name="currentPassword"
                             required
                             autoComplete="current-password"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
                         />
                     </div>
 
@@ -92,6 +115,8 @@ export function PasswordChangeForm() {
                             name="newPassword"
                             required
                             autoComplete="new-password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
                         />
                     </div>
 
@@ -102,13 +127,29 @@ export function PasswordChangeForm() {
                             name="confirmPassword"
                             required
                             autoComplete="new-password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
                         />
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-4">
+                        {hasChanges && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleCancel}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </Button>
+                        )}
                         <Button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || !hasChanges}
+                            className={cn(
+                                !hasChanges && "opacity-50",
+                                "transition-opacity"
+                            )}
                         >
                             {loading ? "Updating..." : "Update Password"}
                         </Button>
