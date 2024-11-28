@@ -423,3 +423,43 @@ export async function completeOnboarding(formData: FormData): Promise<ActionResp
   revalidatePath('/', 'layout')
   return { success: true }
 }
+
+export async function updateProfile(formData: FormData): Promise<ActionResponse> {
+  const supabase = await createClient()
+
+  const name = formData.get('name') as string
+  const role = formData.get('role') as string
+
+  if (!name || !role) {
+    return {
+      error: 'Name and role are required'
+    }
+  }
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return {
+      error: 'Authentication error'
+    }
+  }
+
+  // Update profile
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      name,
+      role,
+    })
+    .eq('id', user.id)
+
+  if (profileError) {
+    return {
+      error: profileError.message
+    }
+  }
+
+  revalidatePath('/dashboard', 'layout')
+  return { success: true }
+}

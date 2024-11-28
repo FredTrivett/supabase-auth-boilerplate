@@ -1,233 +1,91 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { updateEmail, signOut } from '@/app/(auth)/actions'
-import { createClient } from '@/utils/supabase/client'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, CheckCircle2, Mail, User, ArrowRight, LogOut } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useSearchParams } from 'next/navigation'
+import Link from "next/link"
+import { createClient } from '@/utils/supabase/server'
 
-export default function SettingsPage() {
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [success, setSuccess] = useState(false)
-    const [showForm, setShowForm] = useState(false)
-    const [currentEmail, setCurrentEmail] = useState<string | null>(null)
-    const [newEmail, setNewEmail] = useState('')
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-    const searchParams = useSearchParams()
-    const [isPolling, setIsPolling] = useState(false)
+async function getProfile() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    useEffect(() => {
-        async function getUser() {
-            const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user?.email) {
-                setCurrentEmail(user.email)
-            }
-        }
-        getUser()
+    if (!user) return null
 
-        if (searchParams.get('success') === 'email-change') {
-            setSuccess(true)
-            setError(null)
-            setIsPolling(true)
-        } else if (searchParams.get('error') === 'email-change') {
-            setError(searchParams.get('message') || 'Error changing email')
-            setSuccess(false)
-        }
-    }, [searchParams])
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, role')
+        .eq('id', user.id)
+        .single()
 
-    useEffect(() => {
-        let interval: NodeJS.Timeout
-
-        if (isPolling) {
-            interval = setInterval(async () => {
-                const supabase = createClient()
-                const { data: { user } } = await supabase.auth.getUser()
-
-                if (user?.email && user.email !== currentEmail) {
-                    setCurrentEmail(user.email)
-                    setIsPolling(false)
-                    setSuccess(false)
-                    setError(null)
-                    clearInterval(interval)
-                }
-            }, 2000)
-        }
-
-        return () => {
-            if (interval) {
-                clearInterval(interval)
-            }
-        }
-    }, [isPolling, currentEmail])
-
-    useEffect(() => {
-        if (success && !isPolling) {
-            setIsPolling(true)
-        }
-    }, [success])
-
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-
-        if (newEmail === currentEmail) {
-            setError('New email cannot be the same as your current email')
-            return
-        }
-
-        setShowConfirmDialog(true)
+    return {
+        ...profile,
+        email: user.email
     }
+}
 
-    async function confirmEmailChange() {
-        setError(null)
-        setLoading(true)
-        setSuccess(false)
-        setShowConfirmDialog(false)
+export default async function SettingsPage() {
+    const profile = await getProfile()
 
-        const formData = new FormData()
-        formData.append('email', newEmail)
-
-        const result = await updateEmail(formData)
-
-        if (result?.error) {
-            setError(result.error)
-        } else {
-            setSuccess(true)
-            setShowForm(false)
-            setNewEmail('')
-        }
-        setLoading(false)
+    if (!profile) {
+        return <div>Loading...</div>
     }
 
     return (
-        <div className="flex-1 space-y-4">
-            <div className="mb-8 flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-                    <p className="text-muted-foreground">Manage your account settings</p>
-                </div>
-                <form action={signOut}>
-                    <Button
-                        variant="ghost"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                        Sign out
-                        <LogOut className="mr-2 h-4 w-4" />
-                    </Button>
-                </form>
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Profile</CardTitle>
+                    <CardDescription>
+                        View and manage your account information
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium">Name</p>
+                        <p className="text-sm text-muted-foreground">{profile.name}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium">Email</p>
+                        <p className="text-sm text-muted-foreground">{profile.email}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium">Role</p>
+                        <p className="text-sm text-muted-foreground capitalize">{profile.role.replace(/_/g, ' ')}</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Edit Profile</CardTitle>
+                        <CardDescription>
+                            Update your name and role
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="link" asChild>
+                            <Link className="pl-0" href="/dashboard/settings/profile">
+                                Edit Profile →
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Security Settings</CardTitle>
+                        <CardDescription>
+                            Manage your email, password and account security
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="link" asChild>
+                            <Link className="pl-0" href="/dashboard/settings/account">
+                                Manage Security →
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
-
-            {error && (
-                <Alert variant="destructive" className="">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
-
-            {success && (
-                <Alert className="mb-6 border-green-500 text-green-700">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <AlertDescription>
-                        {searchParams.get('success') === 'email-change'
-                            ? 'Email changed successfully!'
-                            : 'Email update initiated. Please check your new email for a confirmation link.'}
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            <div className="py-4">
-                <div className="flex items-center gap-4 mb-6">
-                    <div className="p-2 bg-primary/10 rounded-full">
-                        <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-semibold">Account Information</h2>
-                        <p className="text-sm text-muted-foreground">Manage your personal information</p>
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-4">
-                            <Mail className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                                <p className="text-sm font-medium">Email Address</p>
-                                <p className="text-sm text-muted-foreground">{currentEmail}</p>
-                            </div>
-                        </div>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowForm(!showForm)}
-                        >
-                            {showForm ? 'Cancel' : 'Change'}
-                        </Button>
-                    </div>
-
-                    {showForm && (
-                        <div className="p-4 bg-muted/30 rounded-lg space-y-4">
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">New Email Address</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={newEmail}
-                                        onChange={(e) => setNewEmail(e.target.value)}
-                                        placeholder="Enter new email address"
-                                        required
-                                        className="border-0 bg-background"
-                                    />
-                                </div>
-
-                                <div className="flex justify-end">
-                                    <Button
-                                        type="submit"
-                                        disabled={loading}
-                                    >
-                                        {loading ? "Updating..." : "Update Email"}
-                                    </Button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Confirm Email Change</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg mb-4">
-                        <span className="text-sm">{currentEmail}</span>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{newEmail}</span>
-                    </div>
-                    <DialogDescription>
-                        Are you sure you want to change your email address? You'll need to verify your new email before the change takes effect.
-                    </DialogDescription>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowConfirmDialog(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={confirmEmailChange}
-                            disabled={loading}
-                        >
-                            Confirm Change
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     )
 } 

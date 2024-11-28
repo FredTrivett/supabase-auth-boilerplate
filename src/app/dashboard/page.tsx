@@ -40,7 +40,6 @@ export default async function DashboardPage() {
                     <span>Welcome back {profile.name}! 👋</span>
                 )}
             </h1>
-            {/* Rest of your dashboard content */}
         </div>
     )
 } 
