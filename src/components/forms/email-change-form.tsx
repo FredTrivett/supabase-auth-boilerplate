@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateEmail } from '@/app/(auth)/actions'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { createClient } from '@/utils/supabase/client'
 import {
     Dialog,
     DialogContent,
@@ -21,18 +22,56 @@ interface EmailChangeFormProps {
     email: string
 }
 
-export function EmailChangeForm({ email }: EmailChangeFormProps) {
+export function EmailChangeForm({ email: initialEmail }: EmailChangeFormProps) {
     const [loading, setLoading] = useState(false)
     const [showForm, setShowForm] = useState(false)
     const [newEmail, setNewEmail] = useState('')
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+    const [currentEmail, setCurrentEmail] = useState(initialEmail)
+    const [isCheckingEmail, setIsCheckingEmail] = useState(false)
     const router = useRouter()
     const { toast } = useToast()
+    const supabase = createClient()
+
+    // Function to check for email updates
+    const checkEmailUpdate = useCallback(async () => {
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        if (error) {
+            setIsCheckingEmail(false)
+            return
+        }
+
+        if (user?.email && user.email !== currentEmail) {
+            setCurrentEmail(user.email)
+            setIsCheckingEmail(false)
+            toast({
+                title: "Email Updated",
+                description: "Your email has been successfully changed.",
+            })
+            window.location.reload()
+        }
+    }, [currentEmail, toast])
+
+    // Set up polling when email change is initiated
+    useEffect(() => {
+        let interval: NodeJS.Timeout
+
+        if (isCheckingEmail) {
+            interval = setInterval(checkEmailUpdate, 1000)
+        }
+
+        return () => {
+            if (interval) {
+                clearInterval(interval)
+            }
+        }
+    }, [isCheckingEmail, checkEmailUpdate])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
 
-        if (newEmail === email) {
+        if (newEmail === currentEmail) {
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -61,12 +100,12 @@ export function EmailChangeForm({ email }: EmailChangeFormProps) {
             })
         } else {
             toast({
-                title: "Success",
-                description: "Email update initiated. Please check your new email for a confirmation link."
+                title: "Verification Email Sent",
+                description: "Please check your new email for a confirmation link."
             })
             setShowForm(false)
             setNewEmail('')
-            router.refresh()
+            setIsCheckingEmail(true) // Start polling for email updates
         }
         setLoading(false)
     }
@@ -76,7 +115,7 @@ export function EmailChangeForm({ email }: EmailChangeFormProps) {
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
                     <p className="text-sm font-medium">Current Email</p>
-                    <p className="text-sm text-muted-foreground">{email}</p>
+                    <p className="text-sm text-muted-foreground">{currentEmail}</p>
                 </div>
                 <Button
                     variant="outline"
@@ -119,7 +158,7 @@ export function EmailChangeForm({ email }: EmailChangeFormProps) {
                         <DialogTitle>Confirm Email Change</DialogTitle>
                     </DialogHeader>
                     <div className="flex items-center justify-between p-4 bg-muted rounded-lg mb-4">
-                        <span className="text-sm">{email}</span>
+                        <span className="text-sm">{currentEmail}</span>
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{newEmail}</span>
                     </div>

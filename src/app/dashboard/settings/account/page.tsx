@@ -4,8 +4,10 @@ import { Separator } from "@/components/ui/separator"
 import { EmailChangeForm } from "@/components/forms/email-change-form"
 import { createClient } from '@/utils/supabase/server'
 import { signOut } from "@/app/(auth)/actions"
+import { unstable_noStore as noStore } from 'next/cache'
 
 async function getUser() {
+    noStore()
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
