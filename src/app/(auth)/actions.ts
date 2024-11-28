@@ -391,13 +391,14 @@ export async function completeOnboarding(formData: FormData): Promise<ActionResp
     }
   }
 
-  // Insert/update profile
+  // Insert/update profile with first_login set to true
   const { error: profileError } = await supabase
     .from('profiles')
     .upsert({
       id: user.id,
       name,
       role,
+      first_login: true // This will be true on first login
     })
 
   if (profileError) {
