@@ -113,6 +113,7 @@ export default function ResetPasswordPage() {
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter your new password"
                                     required
                                     minLength={6}
                                 />
@@ -124,6 +125,7 @@ export default function ResetPasswordPage() {
                                     id="confirmPassword"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="Confirm your new password"
                                     required
                                     minLength={6}
                                 />
@@ -134,7 +136,7 @@ export default function ResetPasswordPage() {
                                 className="w-full"
                                 disabled={loading}
                             >
-                                {loading ? "Updating..." : "Update password"}
+                                {loading ? "Resetting..." : "Reset password"}
                             </Button>
                         </form>
                     )}
