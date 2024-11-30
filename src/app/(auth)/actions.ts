@@ -99,44 +99,42 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
   }
 
   const { email, password } = validatedFields.data
-
-  // Create user with email_verified explicitly set to false
-  const { error: signUpError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        email_verified: false
-      },
-      emailRedirectTo: undefined // Disable Supabase email
-    }
-  })
-
-  if (signUpError) {
-    return {
-      error: signUpError.message
-    }
-  }
-
-  // Sign in the user immediately
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  })
-
-  if (signInError) {
-    return {
-      error: signInError.message
-    }
-  }
-
-  // Generate verification code
   const verificationCode = Math.floor(1000 + Math.random() * 9000).toString()
 
   try {
-    // Store verification data in cookies
-    const cookieStore = await cookies()
-    cookieStore.set('verification_data', JSON.stringify({
+    // First sign up the user
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          email_verified: false
+        },
+        emailRedirectTo: undefined
+      }
+    })
+
+    if (signUpError) {
+      return {
+        error: signUpError.message
+      }
+    }
+
+    // Then sign them in immediately
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (signInError) {
+      return {
+        error: signInError.message
+      }
+    }
+
+    // Store verification data
+    const cookieStore = cookies()
+    await cookieStore.set('verification_data', JSON.stringify({
       email,
       code: verificationCode,
       expires: Date.now() + 10 * 60 * 1000
@@ -147,7 +145,7 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
       maxAge: 600
     })
 
-    // Send verification email through Resend only
+    // Send verification email
     await resend.emails.send({
       from: 'Fred at Growvy <fred@growvy.app>',
       to: email,
@@ -160,7 +158,6 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
     })
 
     return { success: true }
-
   } catch (error) {
     console.error('Error in signup:', error)
     return { error: 'An unexpected error occurred' }
@@ -168,7 +165,8 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
 }
 
 export async function verifyCode(formData: FormData) {
-  const cookieStore = await cookies()
+  const supabase = await createClient()
+  const cookieStore = cookies()
   const verificationData = cookieStore.get('verification_data')
 
   if (!verificationData?.value) {
@@ -197,20 +195,28 @@ export async function verifyCode(formData: FormData) {
     }
   }
 
+  // Get current session
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      error: 'Authentication error. Please try signing in again.'
+    }
+  }
+
   // Update user metadata to mark email as verified
-  const supabase = await createClient()
   const { error: updateError } = await supabase.auth.updateUser({
     data: { email_verified: true }
   })
-
-  // Clean up
-  cookieStore.delete('verification_data')
 
   if (updateError) {
     return {
       error: updateError.message
     }
   }
+
+  // Clean up
+  cookieStore.delete('verification_data')
 
   // Redirect to onboarding after successful verification
   redirect('/onboarding')
@@ -332,8 +338,22 @@ export async function resetPassword(formData: FormData) {
 }
 
 export async function signOut() {
+  const cookieStore = cookies()
+
+  // Create a new supabase client for signing out
   const supabase = await createClient()
   await supabase.auth.signOut()
+
+  // Set cookies to expire
+  cookieStore.set('sb-access-token', '', {
+    expires: new Date(0),
+    path: '/'
+  })
+  cookieStore.set('sb-refresh-token', '', {
+    expires: new Date(0),
+    path: '/'
+  })
+
   redirect('/login')
 }
 
