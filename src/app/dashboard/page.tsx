@@ -1,5 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 60
+
 async function getProfile() {
     const supabase = await createClient()
 
@@ -8,20 +11,15 @@ async function getProfile() {
 
         if (!user) return null
 
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('name, first_login')
-            .eq('id', user.id)
-            .single()
-
-        if (profile?.first_login) {
-            await supabase
+        const [profileData] = await Promise.all([
+            supabase
                 .from('profiles')
-                .update({ first_login: false })
+                .select('name, first_login')
                 .eq('id', user.id)
-        }
+                .single()
+        ])
 
-        return profile
+        return profileData.data
     } catch (error) {
         console.error('Error fetching profile:', error)
         return null

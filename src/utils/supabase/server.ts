@@ -6,33 +6,28 @@ let cachedClient: any = null;
 export async function createClient(useAdmin: boolean = false) {
   if (cachedClient) return cachedClient;
 
-  const authKey = useAdmin
-    ? process.env.SUPABASE_SERVICE_ROLE_KEY
-    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const cookieStore = cookies()
 
   cachedClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    authKey!,
+    useAdmin ? process.env.SUPABASE_SERVICE_ROLE_KEY! : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const cookieStore = await cookies()
+        get(name: string) {
           return cookieStore.get(name)?.value
         },
-        async set(name: string, value: string, options: CookieOptions) {
+        set(name: string, value: string, options: CookieOptions) {
           try {
-            const cookieStore = await cookies()
             cookieStore.set(name, value, options)
           } catch (error) {
-            // Cookie errors can be ignored in middleware
+            // Ignore cookie errors in middleware
           }
         },
-        async remove(name: string, options: CookieOptions) {
+        remove(name: string, options: CookieOptions) {
           try {
-            const cookieStore = await cookies()
             cookieStore.set(name, '', { ...options, maxAge: 0 })
           } catch (error) {
-            // Cookie errors can be ignored in middleware
+            // Ignore cookie errors in middleware
           }
         },
       },

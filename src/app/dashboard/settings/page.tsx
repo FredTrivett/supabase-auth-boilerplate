@@ -42,11 +42,15 @@ export default async function SettingsPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">{profile.email}</p>
                 </div>
-                <form action={signOut}>
+                <form
+                    action={signOut}
+                    className="inline-block"
+                >
                     <Button
                         variant="ghost"
                         size="sm"
                         className="text-muted-foreground hover:text-destructive"
+                        type="submit"
                     >
                         Sign out
                     </Button>
