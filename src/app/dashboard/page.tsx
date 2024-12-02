@@ -37,9 +37,9 @@ export default async function DashboardPage() {
         <div>
             <h1 className="text-3xl font-bold mb-6">
                 {profile.first_login ? (
-                    <span>Welcome {profile.name}! 👋</span>
+                    <span>Welcome {profile.name}</span>
                 ) : (
-                    <span>Welcome back {profile.name}! 👋</span>
+                    <span>Welcome back {profile.name}</span>
                 )}
             </h1>
         </div>
