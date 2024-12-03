@@ -7,18 +7,66 @@ export async function middleware(request: NextRequest) {
     const { supabase, response } = createClient(request)
 
     // Refresh session if expired
-    await supabase.auth.getSession()
+    const { data: { session } } = await supabase.auth.getSession()
 
-    // Add cache control headers for static routes
+    // Check if route starts with /dashboard
     if (request.nextUrl.pathname.startsWith('/dashboard')) {
-      response.headers.set(
-        'Cache-Control',
-        'public, s-maxage=10, stale-while-revalidate=59'
-      )
+      if (!session) {
+        const redirectUrl = new URL('/login', request.url)
+        return NextResponse.redirect(redirectUrl)
+      }
     }
 
-    return response
+    // Check if route starts with /admin
+    if (request.nextUrl.pathname.startsWith('/admin')) {
+      if (!session) {
+        const redirectUrl = new URL('/login', request.url)
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      // Get user profile to check app_role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('app_role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile?.app_role !== 'admin') {
+        const redirectUrl = new URL('/dashboard', request.url)
+        return NextResponse.redirect(redirectUrl)
+      }
+    }
+
+    // Redirect logged in users away from auth pages
+    if (request.nextUrl.pathname.startsWith('/login') ||
+      request.nextUrl.pathname.startsWith('/signup')) {
+      if (session) {
+        const redirectUrl = new URL('/dashboard', request.url)
+        return NextResponse.redirect(redirectUrl)
+      }
+    }
+
+    // Clone the response and add the Supabase session cookie
+    const finalResponse = NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+
+    // Copy over the cookies from the original response
+    const responseCookies = response.headers.get('set-cookie')
+    if (responseCookies) {
+      finalResponse.headers.set('set-cookie', responseCookies)
+    }
+
+    return finalResponse
+
   } catch (e) {
+    if (request.nextUrl.pathname.startsWith('/dashboard') ||
+      request.nextUrl.pathname.startsWith('/admin')) {
+      const redirectUrl = new URL('/login', request.url)
+      return NextResponse.redirect(redirectUrl)
+    }
     return NextResponse.next()
   }
 }

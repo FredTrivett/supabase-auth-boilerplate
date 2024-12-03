@@ -42,10 +42,7 @@ export default async function SettingsPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">{profile.email}</p>
                 </div>
-                <form
-                    action={signOut}
-                    className="inline-block"
-                >
+                <form action={signOut}>
                     <Button
                         variant="ghost"
                         size="sm"
@@ -57,44 +54,46 @@ export default async function SettingsPage() {
                 </form>
             </div>
 
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                <Link href="/dashboard/settings/profile" className="block group h-full">
-                    <Card className="h-full">
-                        <CardHeader>
-                            <CardTitle>Edit Profile</CardTitle>
-                            <CardDescription>
-                                Update your name and role
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <span className={cn(
-                                "text-sm font-medium text-primary",
-                                "group-hover:underline"
-                            )}>
-                                Edit Profile →
-                            </span>
-                        </CardContent>
-                    </Card>
-                </Link>
+            <div className="space-y-8">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <Link href="/dashboard/settings/profile" className="block group h-full">
+                        <Card className="h-full">
+                            <CardHeader>
+                                <CardTitle>Edit Profile</CardTitle>
+                                <CardDescription>
+                                    Update your name and role
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <span className={cn(
+                                    "text-sm font-medium text-primary",
+                                    "group-hover:underline"
+                                )}>
+                                    Edit Profile →
+                                </span>
+                            </CardContent>
+                        </Card>
+                    </Link>
 
-                <Link href="/dashboard/settings/account" className="block group h-full">
-                    <Card className="h-full">
-                        <CardHeader>
-                            <CardTitle>Security Settings</CardTitle>
-                            <CardDescription>
-                                Manage your email, password and account security
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <span className={cn(
-                                "text-sm font-medium text-primary",
-                                "group-hover:underline"
-                            )}>
-                                Manage Security →
-                            </span>
-                        </CardContent>
-                    </Card>
-                </Link>
+                    <Link href="/dashboard/settings/account" className="block group h-full">
+                        <Card className="h-full">
+                            <CardHeader>
+                                <CardTitle>Security Settings</CardTitle>
+                                <CardDescription>
+                                    Manage your email, password and account security
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <span className={cn(
+                                    "text-sm font-medium text-primary",
+                                    "group-hover:underline"
+                                )}>
+                                    Manage Security →
+                                </span>
+                            </CardContent>
+                        </Card>
+                    </Link>
+                </div>
             </div>
         </div>
     )

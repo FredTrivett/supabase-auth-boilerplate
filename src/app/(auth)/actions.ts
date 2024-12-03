@@ -338,23 +338,34 @@ export async function resetPassword(formData: FormData) {
 }
 
 export async function signOut() {
-  const cookieStore = cookies()
+  try {
+    const cookieStore = cookies()
+    const supabase = await createClient()
 
-  // Create a new supabase client for signing out
-  const supabase = await createClient()
-  await supabase.auth.signOut()
+    // Sign out from Supabase
+    await supabase.auth.signOut()
 
-  // Set cookies to expire
-  cookieStore.set('sb-access-token', '', {
-    expires: new Date(0),
-    path: '/'
-  })
-  cookieStore.set('sb-refresh-token', '', {
-    expires: new Date(0),
-    path: '/'
-  })
+    // Get all cookies and delete them
+    const cookiesList = cookieStore.getAll()
+    cookiesList.forEach(cookie => {
+      // Delete any auth-related cookies
+      if (cookie.name.startsWith('sb-') ||
+        cookie.name.includes('supabase') ||
+        cookie.name.includes('auth')) {
+        cookieStore.set(cookie.name, '', {
+          expires: new Date(0),
+          path: '/'
+        })
+      }
+    })
 
-  redirect('/login')
+    // Redirect to home page
+    redirect('/')
+  } catch (error) {
+    console.error('Error during sign out:', error)
+    // Still redirect even if there's an error
+    redirect('/')
+  }
 }
 
 export async function updateEmail(formData: FormData) {

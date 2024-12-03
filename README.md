@@ -93,6 +93,54 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 ```
 
+```sql
+-- First, add email column if it doesn't exist
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS email text;
+
+-- Create a function to handle new user creation and updates
+CREATE OR REPLACE FUNCTION public.handle_user_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- For new users
+        INSERT INTO public.profiles (id, email, name, app_role, created_at)
+        VALUES (
+            NEW.id,
+            NEW.email,
+            COALESCE(NEW.raw_user_meta_data->>'name', NEW.email),
+            'user',
+            NEW.created_at
+        );
+    ELSIF TG_OP = 'UPDATE' THEN
+        -- For email updates
+        UPDATE public.profiles 
+        SET email = NEW.email
+        WHERE id = NEW.id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create triggers for both INSERT and UPDATE
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_user_change();
+
+DROP TRIGGER IF EXISTS on_auth_user_updated ON auth.users;
+CREATE TRIGGER on_auth_user_updated
+    AFTER UPDATE OF email ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_user_change();
+
+-- Update existing users' emails
+UPDATE public.profiles p
+SET email = u.email
+FROM auth.users u
+WHERE p.id = u.id
+AND (p.email IS NULL OR p.email != u.email);
+```
+
 ### 4. Configure Supabase Email Templates
 
 1. Go to Authentication > Email Templates
