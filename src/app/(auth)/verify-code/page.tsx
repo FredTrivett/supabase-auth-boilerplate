@@ -23,6 +23,16 @@ export default function VerifyCode() {
         }
     }, [countdown])
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (inputs.current[0]) {
+                inputs.current[0].focus()
+            }
+        }, 50)
+
+        return () => clearTimeout(timer)
+    }, [])
+
     const handleInput = async (index: number, value: string) => {
         const numericValue = value.replace(/[^0-9]/g, '')
 
