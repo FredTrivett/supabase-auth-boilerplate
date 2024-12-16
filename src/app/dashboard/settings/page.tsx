@@ -5,7 +5,13 @@ import { createClient } from '@/utils/supabase/server'
 import { cn } from "@/lib/utils"
 import { signOut } from "@/app/(auth)/actions"
 
-async function getProfile() {
+interface Profile {
+    name: string | null;
+    app_role: string;
+    email: string | null;
+}
+
+async function getProfile(): Promise<Profile | null> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -13,12 +19,13 @@ async function getProfile() {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('name, role')
+        .select('name, app_role')
         .eq('id', user.id)
         .single()
 
     return {
-        ...profile,
+        name: profile?.name || 'Anonymous',
+        app_role: profile?.app_role || 'user',
         email: user.email
     }
 }
@@ -36,8 +43,11 @@ export default async function SettingsPage() {
                 <div className="space-y-1">
                     <div className="flex items-center gap-x-2">
                         <p className="text-sm font-medium leading-none">{profile.name}</p>
-                        <div className="text-xs text-muted-foreground bg-muted px-2.5 py-0.5 rounded-md">
-                            {profile.role.replace(/_/g, ' ')}
+                        <div className={`text-xs px-2.5 py-0.5 rounded-md ${profile.app_role === 'admin'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                            {profile.app_role}
                         </div>
                     </div>
                     <p className="text-sm text-muted-foreground">{profile.email}</p>

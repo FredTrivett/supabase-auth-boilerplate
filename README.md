@@ -43,6 +43,7 @@ npm install
 create table profiles (
   id uuid references auth.users on delete cascade primary key,
   name text,
+  email text,
   role text,
   first_login boolean default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -76,11 +77,12 @@ create trigger handle_profiles_updated_at
   for each row
   execute procedure handle_updated_at();
 
+-- Update the handle_new_user function to include email
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id)
-  values (new.id);
+  insert into public.profiles (id, email)
+  values (new.id, new.email);
   return new;
 end;
 $$ language plpgsql security definer;
@@ -88,6 +90,30 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Function to sync email changes from auth.users to profiles
+create or replace function handle_auth_email_change()
+returns trigger as $$
+begin
+  update public.profiles
+  set email = new.email
+  where id = new.id;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to sync email changes
+create trigger on_auth_email_updated
+  after update of email on auth.users
+  for each row
+  execute procedure handle_auth_email_change();
+
+-- Update existing profiles with emails from auth.users
+update profiles
+set email = au.email
+from auth.users au
+where profiles.id = au.id
+and profiles.email is null;
 ```
 
 ### 4. Configure Supabase Email Templates

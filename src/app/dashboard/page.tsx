@@ -20,8 +20,8 @@ export default async function DashboardPage() {
         .single();
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-2xl font-bold mb-4">
+        <div className="container">
+            <h1 className="text-2xl font-bold ">
                 {profile?.first_login ? (
                     <span>Welcome {profile?.name || 'User'}</span>
                 ) : (

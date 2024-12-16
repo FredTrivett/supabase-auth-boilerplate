@@ -54,8 +54,7 @@ export async function login(formData: FormData) {
     // Generate and send new verification code
     const verificationCode = Math.floor(1000 + Math.random() * 9000).toString()
 
-    const cookieStore = await cookies()
-    cookieStore.set('verification_data', JSON.stringify({
+    cookies().set('verification_data', JSON.stringify({
       email,
       code: verificationCode,
       expires: Date.now() + 10 * 60 * 1000
@@ -133,8 +132,7 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
     }
 
     // Store verification data
-    const cookieStore = cookies()
-    await cookieStore.set('verification_data', JSON.stringify({
+    cookies().set('verification_data', JSON.stringify({
       email,
       code: verificationCode,
       expires: Date.now() + 10 * 60 * 1000
@@ -166,8 +164,7 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
 
 export async function verifyCode(formData: FormData) {
   const supabase = await createClient()
-  const cookieStore = cookies()
-  const verificationData = cookieStore.get('verification_data')
+  const verificationData = cookies().get('verification_data')
 
   if (!verificationData?.value) {
     return {
@@ -183,7 +180,7 @@ export async function verifyCode(formData: FormData) {
   ).join('')
 
   if (Date.now() > data.expires) {
-    cookieStore.delete('verification_data')
+    cookies().delete('verification_data')
     return {
       error: 'Verification code expired. Please try signing up again.'
     }
@@ -216,7 +213,7 @@ export async function verifyCode(formData: FormData) {
   }
 
   // Clean up
-  cookieStore.delete('verification_data')
+  cookies().delete('verification_data')
 
   // Redirect to onboarding after successful verification
   redirect('/onboarding')
@@ -227,8 +224,7 @@ export async function resendCode(email: string) {
 
   try {
     // Store new verification data
-    const cookieStore = await cookies()
-    cookieStore.set('verification_data', JSON.stringify({
+    cookies().set('verification_data', JSON.stringify({
       email,
       code: verificationCode,
       expires: Date.now() + 10 * 60 * 1000

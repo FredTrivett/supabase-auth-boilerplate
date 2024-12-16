@@ -56,21 +56,28 @@ export async function middleware(request: NextRequest) {
 
     // Handle admin routes
     if (request.nextUrl.pathname.startsWith('/admin')) {
+      console.log('Checking admin access for user:', user?.id);
+
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('app_role')
         .eq('id', user?.id)
         .single();
 
+      console.log('Profile data:', profile);
+      console.log('Profile error:', profileError);
+
       if (profileError || !profile?.app_role || profile.app_role !== 'admin') {
+        console.log('Access denied: User is not admin');
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
+
+      console.log('Access granted: User is admin');
     }
 
     return response;
   } catch (e) {
     console.error('Middleware error:', e);
-    // On critical errors, redirect to login
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }
