@@ -1,30 +1,86 @@
-import { createClient } from '@/utils/supabase/middleware'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
   try {
-    const { supabase, response } = createClient(request)
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            });
+          },
+          remove(name: string, options: CookieOptions) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            });
+          },
+        },
+      }
+    );
 
-    // Refresh session if expired
-    await supabase.auth.getSession()
+    // Refresh the session and get the user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    // Add cache control headers for static routes
-    if (request.nextUrl.pathname.startsWith('/dashboard')) {
-      response.headers.set(
-        'Cache-Control',
-        'public, s-maxage=10, stale-while-revalidate=59'
-      )
+    // Handle auth pages (login, signup, forgot-password)
+    if (request.nextUrl.pathname.match(/^\/(?:login|signup|forgot-password)$/)) {
+      if (user && !userError) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+      return response;
     }
 
-    return response
+    // Handle protected routes
+    if ((!user || userError) && (
+      request.nextUrl.pathname.startsWith('/dashboard') ||
+      request.nextUrl.pathname.startsWith('/admin')
+    )) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // Handle admin routes
+    if (request.nextUrl.pathname.startsWith('/admin')) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('app_role')
+        .eq('id', user?.id)
+        .single();
+
+      if (profileError || !profile?.app_role || profile.app_role !== 'admin') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+
+    return response;
   } catch (e) {
-    return NextResponse.next()
+    console.error('Middleware error:', e);
+    // On critical errors, redirect to login
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/login',
+    '/signup',
+    '/forgot-password'
   ],
-}
+};

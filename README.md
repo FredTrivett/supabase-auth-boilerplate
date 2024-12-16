@@ -49,21 +49,18 @@ create table profiles (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable Row Level Security
+-- Add app_role column to profiles table
+ALTER TABLE profiles ADD COLUMN app_role text CHECK (app_role IN ('admin', 'user')) DEFAULT 'user';
+
+-- Enable Row Level Security 
 alter table profiles enable row level security;
 
 -- Create policies
-create policy "Users can view own profile"
-  on profiles for select
-  using ( auth.uid() = id );
-
-create policy "Users can update own profile"
-  on profiles for update
-  using ( auth.uid() = id );
-
-create policy "Users can insert own profile"
-  on profiles for insert
-  with check ( auth.uid() = id );
+CREATE POLICY "Admins can view all profiles" ON profiles FOR SELECT USING (auth.jwt() ->> 'app_role' = 'admin');
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);  
+CREATE POLICY "Admins can update all profiles" ON profiles FOR UPDATE USING (auth.jwt() ->> 'app_role' = 'admin');
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Create triggers
 create or replace function handle_updated_at()
@@ -162,6 +159,8 @@ Visit `http://localhost:3000` to see your application.
 3. A profile is automatically created for new users
 4. The dashboard shows a different welcome message for first-time users
 5. Email change requests trigger a confirmation email using custom template
+6. Admin users can access the `/admin` route, which is protected by a higher-order component or middleware that checks the user's `app_role`
+7. The `useAuth` hook provides the current user's information, including their `app_role`, and handles authentication state
 
 ## Email Features
 
@@ -188,3 +187,23 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 MIT
+
+## Admin Dashboard
+
+The admin dashboard is accessible at the `/admin` route and is protected by the `withAdminAuth` higher-order component, which ensures only users with the "admin" role can access it.
+
+The dashboard fetches and displays relevant statistics, such as the total number of accounts created. It uses Supabase's `select` method with the `count` option to retrieve the count of profiles.
+
+Real-time updates are implemented using Supabase's real-time subscriptions. Whenever a new account is created, the subscription callback is triggered, and the statistics are updated accordingly.
+
+Data visualization is achieved using the Chart.js library. The total accounts count is presented in a bar chart format for easy comprehension.
+
+### User Management
+
+The admin dashboard includes a `UserTable` component that displays a list of all users. It fetches user data from the Supabase database using the `select` method and displays it in a table format.
+
+Pagination is implemented using the `range` and `order` options in Supabase queries. The component fetches users in batches of 10 and provides controls to navigate between pages.
+
+Search functionality is added using the `ilike` operator in Supabase queries. Admins can search for users by name, and the table will update to display matching results.
+
+Filtering by role is implemented using the `eq` operator in Supabase queries. Admins can select a specific role from a dropdown, and the table will update to display users with the selected role.

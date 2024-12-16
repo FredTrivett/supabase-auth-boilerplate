@@ -1,31 +1,22 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export async function createClient(useAdmin: boolean = false) {
-  const cookieStore = cookies()
+export async function createClient() {
+  const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    useAdmin ? process.env.SUPABASE_SERVICE_ROLE_KEY! : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: async (name: string) => {
-          const cookie = await cookieStore.get(name)
-          return cookie?.value
+        get(name: string) {
+          return cookieStore.get(name)?.value;
         },
-        set: async (name: string, value: string, options: CookieOptions) => {
-          try {
-            await cookieStore.set(name, value, options)
-          } catch (error) {
-            // Handle cookie errors in middleware
-          }
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
         },
-        remove: async (name: string, options: CookieOptions) => {
-          try {
-            await cookieStore.set(name, '', { ...options, maxAge: 0 })
-          } catch (error) {
-            // Handle cookie errors in middleware
-          }
+        remove(name: string, options: CookieOptions) {
+          cookieStore.delete({ name, ...options });
         },
       },
     }
