@@ -26,7 +26,7 @@ async function getProfile(): Promise<Profile | null> {
     return {
         name: profile?.name || 'Anonymous',
         app_role: profile?.app_role || 'user',
-        email: user.email
+        email: user.email || null
     }
 }
 
@@ -44,8 +44,8 @@ export default async function SettingsPage() {
                     <div className="flex items-center gap-x-2">
                         <p className="text-sm font-medium leading-none">{profile.name}</p>
                         <div className={`text-xs px-2.5 py-0.5 rounded-md ${profile.app_role === 'admin'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-gray-100 text-gray-800'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-gray-100 text-gray-800'
                             }`}>
                             {profile.app_role}
                         </div>

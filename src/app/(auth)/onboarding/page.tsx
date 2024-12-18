@@ -6,36 +6,17 @@ import { completeOnboarding } from '@/app/(auth)/actions'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-const roles = [
-    { value: 'student', label: 'Student' },
-    { value: 'small_business_owner', label: 'Small Business Owner' },
-    { value: 'entrepreneur', label: 'Entrepreneur' },
-    { value: 'freelancer', label: 'Freelancer' },
-    { value: 'startup_founder', label: 'Startup Founder' },
-    { value: 'other', label: 'Other' },
-]
 
 export default function OnboardingPage() {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
-    const [selectedRole, setSelectedRole] = useState<string>('')
     const router = useRouter()
 
     async function handleSubmit(formData: FormData) {
         setError(null)
         setLoading(true)
-
-        formData.append('role', selectedRole)
 
         const result = await completeOnboarding(formData)
 
@@ -75,33 +56,10 @@ export default function OnboardingPage() {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="role">What is your current role?</Label>
-                            <Select
-                                value={selectedRole}
-                                onValueChange={setSelectedRole}
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select your role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {roles.map((role) => (
-                                        <SelectItem
-                                            key={role.value}
-                                            value={role.value}
-                                        >
-                                            {role.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
                         <Button
                             type="submit"
                             className="w-full"
-                            disabled={loading || !selectedRole}
+                            disabled={loading}
                         >
                             {loading ? "Saving..." : "Complete Profile"}
                         </Button>

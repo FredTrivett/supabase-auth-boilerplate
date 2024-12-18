@@ -7,57 +7,35 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-
-const roles = [
-    { value: 'student', label: 'Student' },
-    { value: 'small_business_owner', label: 'Small Business Owner' },
-    { value: 'entrepreneur', label: 'Entrepreneur' },
-    { value: 'freelancer', label: 'Freelancer' },
-    { value: 'startup_founder', label: 'Startup Founder' },
-    { value: 'other', label: 'Other' },
-]
 
 interface ProfileFormProps {
     initialData: {
         name: string
-        role: string
     }
 }
 
 export function ProfileForm({ initialData }: ProfileFormProps) {
     const [loading, setLoading] = useState(false)
-    const [selectedRole, setSelectedRole] = useState(initialData.role)
     const [name, setName] = useState(initialData.name)
     const [hasChanges, setHasChanges] = useState(false)
     const router = useRouter()
     const { toast } = useToast()
 
     useEffect(() => {
-        const hasFormChanges =
-            name !== initialData.name ||
-            selectedRole !== initialData.role
+        const hasFormChanges = name !== initialData.name
         setHasChanges(hasFormChanges)
-    }, [name, selectedRole, initialData])
+    }, [name, initialData])
 
     function handleCancel() {
-        setSelectedRole(initialData.role)
         setName(initialData.name)
     }
 
-    async function handleSubmit(formData: FormData) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
         setLoading(true)
-        formData.set('role', selectedRole)
-        formData.set('name', name)
 
-        const result = await updateProfile(formData)
+        const result = await updateProfile({ name })
 
         if (result?.error) {
             toast({
@@ -77,7 +55,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
     return (
         <div className="space-y-4">
-            <form action={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
                     <Input
@@ -87,28 +65,6 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Your name"
                     />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select
-                        value={selectedRole}
-                        onValueChange={setSelectedRole}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {roles.map((role) => (
-                                <SelectItem
-                                    key={role.value}
-                                    value={role.value}
-                                >
-                                    {role.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                 </div>
 
                 <div className="flex justify-end gap-4">

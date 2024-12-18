@@ -19,6 +19,8 @@ type ActionResponse = {
   success?: boolean;
 }
 
+const siteURL = process.env.NEXT_PUBLIC_SITE_URL
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
@@ -54,7 +56,8 @@ export async function login(formData: FormData) {
     // Generate and send new verification code
     const verificationCode = Math.floor(1000 + Math.random() * 9000).toString()
 
-    cookies().set('verification_data', JSON.stringify({
+    const cookieStore = await cookies()
+    cookieStore.set('verification_data', JSON.stringify({
       email,
       code: verificationCode,
       expires: Date.now() + 10 * 60 * 1000
@@ -132,7 +135,8 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
     }
 
     // Store verification data
-    cookies().set('verification_data', JSON.stringify({
+    const cookieStore = await cookies()
+    cookieStore.set('verification_data', JSON.stringify({
       email,
       code: verificationCode,
       expires: Date.now() + 10 * 60 * 1000
@@ -164,7 +168,8 @@ export async function signup(formData: FormData): Promise<ActionResponse> {
 
 export async function verifyCode(formData: FormData) {
   const supabase = await createClient()
-  const verificationData = cookies().get('verification_data')
+  const cookieStore = await cookies()
+  const verificationData = cookieStore.get('verification_data')
 
   if (!verificationData?.value) {
     return {
@@ -180,7 +185,7 @@ export async function verifyCode(formData: FormData) {
   ).join('')
 
   if (Date.now() > data.expires) {
-    cookies().delete('verification_data')
+    cookieStore.delete('verification_data')
     return {
       error: 'Verification code expired. Please try signing up again.'
     }
@@ -213,7 +218,7 @@ export async function verifyCode(formData: FormData) {
   }
 
   // Clean up
-  cookies().delete('verification_data')
+  cookieStore.delete('verification_data')
 
   // Redirect to onboarding after successful verification
   redirect('/onboarding')
@@ -224,7 +229,8 @@ export async function resendCode(email: string) {
 
   try {
     // Store new verification data
-    cookies().set('verification_data', JSON.stringify({
+    const cookieStore = await cookies()
+    cookieStore.set('verification_data', JSON.stringify({
       email,
       code: verificationCode,
       expires: Date.now() + 10 * 60 * 1000
@@ -255,58 +261,29 @@ export async function resendCode(email: string) {
   }
 }
 
-export async function updatePassword(formData: FormData): Promise<ActionResponse> {
+export async function updatePassword(formData: FormData, code: string) {
+  const password = formData.get('password')?.toString()
+  const confirmPassword = formData.get('confirmPassword')?.toString()
+
+  if (!password || !confirmPassword || password !== confirmPassword) {
+    return {
+      error: 'Passwords do not match'
+    }
+  }
+
   const supabase = await createClient()
+  const { data, error } = await supabase.auth.updateUser({ password }, { emailRedirectTo: `${siteURL}/login` })
 
-  const currentPassword = formData.get('currentPassword') as string
-  const newPassword = formData.get('newPassword') as string
-  const confirmPassword = formData.get('confirmPassword') as string
-
-  if (!currentPassword || !newPassword || !confirmPassword) {
+  if (error) {
     return {
-      error: 'All fields are required'
+      error: error.message
     }
   }
 
-  if (newPassword !== confirmPassword) {
-    return {
-      error: 'New passwords do not match'
-    }
+  return {
+    data,
+    error: null
   }
-
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user?.email) {
-    return {
-      error: 'Authentication error'
-    }
-  }
-
-  // First verify the current password
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email: user.email,
-    password: currentPassword,
-  })
-
-  if (signInError) {
-    return {
-      error: 'Current password is incorrect'
-    }
-  }
-
-  // Update the password
-  const { error: updateError } = await supabase.auth.updateUser({
-    password: newPassword
-  })
-
-  if (updateError) {
-    return {
-      error: updateError.message
-    }
-  }
-
-  return { success: true }
 }
 
 export async function resetPassword(formData: FormData) {
@@ -334,13 +311,11 @@ export async function resetPassword(formData: FormData) {
 }
 
 export async function signOut() {
-  const cookieStore = cookies()
-
-  // Create a new supabase client for signing out
+  const cookieStore = await cookies()
   const supabase = await createClient()
+
   await supabase.auth.signOut()
 
-  // Set cookies to expire
   cookieStore.set('sb-access-token', '', {
     expires: new Date(0),
     path: '/'
@@ -373,15 +348,11 @@ export async function updateEmail(formData: FormData) {
     }
   }
 
-  // Update the email
+  // Update the email with only the allowed options
   const { error: updateError } = await supabase.auth.updateUser({
-    email: newEmail,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?success=email-change`,
-      data: {
-        skipOldEmailNotification: true // This tells Supabase to skip notifying the old email
-      }
-    }
+    email: newEmail
+  }, {
+    emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?success=email-change`
   })
 
   if (updateError) {
@@ -402,11 +373,10 @@ export async function completeOnboarding(formData: FormData): Promise<ActionResp
   const supabase = await createClient()
 
   const name = formData.get('name') as string
-  const role = formData.get('role') as string
 
-  if (!name || !role) {
+  if (!name) {
     return {
-      error: 'Name and role are required'
+      error: 'Name is required'
     }
   }
 
@@ -425,8 +395,9 @@ export async function completeOnboarding(formData: FormData): Promise<ActionResp
     .upsert({
       id: user.id,
       name,
-      role,
-      first_login: true // This will be true on first login
+      app_role: 'user', // Set default role
+      first_login: true,
+      onboarding_completed: true
     })
 
   if (profileError) {
@@ -452,42 +423,31 @@ export async function completeOnboarding(formData: FormData): Promise<ActionResp
   return { success: true }
 }
 
-export async function updateProfile(formData: FormData): Promise<ActionResponse> {
+export async function updateProfile(data: { name: string }) {
   const supabase = await createClient()
 
-  const name = formData.get('name') as string
-  const role = formData.get('role') as string
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!name || !role) {
+  if (!user) {
     return {
-      error: 'Name and role are required'
+      error: 'Unauthorized',
+      success: false,
     }
   }
 
-  // Get the current user
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return {
-      error: 'Authentication error'
-    }
-  }
-
-  // Update profile
-  const { error: profileError } = await supabase
+  const { error } = await supabase
     .from('profiles')
-    .update({
-      name,
-      role,
-    })
+    .update({ name: data.name })
     .eq('id', user.id)
 
-  if (profileError) {
+  if (error) {
     return {
-      error: profileError.message
+      error: error.message,
+      success: false,
     }
   }
 
-  revalidatePath('/dashboard', 'layout')
-  return { success: true }
+  return {
+    success: true,
+  }
 }
