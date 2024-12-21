@@ -1,57 +1,45 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export const useAuth = () => {
-    const [supabase] = useState(() => createBrowserSupabaseClient());
-    const [user, setUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const router = useRouter();
+    const [user, setUser] = useState(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const router = useRouter()
+    const supabase = createClient()
 
     useEffect(() => {
-        const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
-                setUser({ ...user, ...profile });
-            }
-            setIsLoading(false);
-        };
+        // Only set up the auth listener, don't make an initial check
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                if (session?.user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single()
 
-        getUser();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN') {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-                setUser({ ...session.user, ...profile });
+                    setUser({ ...session.user, ...profile })
+                } else {
+                    setUser(null)
+                }
+                setIsLoading(false)
             }
-            if (event === 'SIGNED_OUT') {
-                setUser(null);
-            }
-        });
+        )
 
         return () => {
-            authListener?.subscription.unsubscribe();
-        };
-    }, []);
+            subscription.unsubscribe()
+        }
+    }, [])
 
     const signOut = async () => {
-        await supabase.auth.signOut();
-        setUser(null);
-        router.push('/');
-    };
+        await supabase.auth.signOut()
+        router.push('/login')
+    }
 
     return {
         user,
         isLoading,
         signOut,
-    };
-}; 
+    }
+} 
