@@ -1,7 +1,9 @@
+import { Suspense } from 'react'
+import { SettingsSkeleton } from '@/components/skeletons/settings-skeleton'
 import { createClient } from '@/utils/supabase/server'
 import { ProfileForm } from '@/components/forms/profile-form'
 
-async function getProfile() {
+async function ProfileContent() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -12,16 +14,6 @@ async function getProfile() {
         .select('name')
         .eq('id', user.id)
         .single()
-
-    return profile
-}
-
-export default async function ProfileSettingsPage() {
-    const profile = await getProfile()
-
-    if (!profile) {
-        return <div>Loading...</div>
-    }
 
     return (
         <div className="space-y-8">
@@ -35,5 +27,13 @@ export default async function ProfileSettingsPage() {
                 <ProfileForm initialData={profile} />
             </div>
         </div>
+    )
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={<SettingsSkeleton />}>
+            <ProfileContent />
+        </Suspense>
     )
 } 

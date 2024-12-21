@@ -43,17 +43,19 @@ function SidebarContent({ onNavigate, isMobile }: { onNavigate?: () => void, isM
                             <Link
                                 key={item.title}
                                 href={item.href}
-                                onClick={onNavigate}
                                 prefetch={true}
                                 className={cn(
-                                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700",
-                                    isMobile ? "text-base" : "text-sm",
-                                    isActive
-                                        ? "bg-gray-100 text-black font-bold"
-                                        : "hover:bg-accent"
+                                    "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+                                    pathname === item.href
+                                        ? "bg-muted"
+                                        : "hover:bg-muted/50",
                                 )}
                             >
-                                <Icon className={cn("h-5 w-5", !isMobile && "h-4 w-4")} strokeWidth={isActive ? 2.5 : 2} />
+                                {pathname === item.href ? (
+                                    <Icon className="h-5 w-5 mr-3" />
+                                ) : (
+                                    <Icon className="h-5 w-5 mr-3" />
+                                )}
                                 {item.title}
                             </Link>
                         )
